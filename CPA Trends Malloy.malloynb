@@ -1,0 +1,72 @@
+>>>malloy
+source: CPA is duckdb.table('./Washington_State_Certified_Public_Accountants_20250330.csv') extend {
+    measure:
+    ActiveRatio is Num_Active_CPA / Total_CPA
+    Total_CPA is count()
+    Num_Active_CPA is count() {where: Status = 'Licensed to practice public accounting'}
+    Num_Retired_CPA is count() {where: Status = 'Retired Licensee'}
+    Num_Inactive_CPA is count() {where: Status = 'Lapsed Licensee' or Status = 'Lapsed Certificateholder' or Status = 'Holds a CPA License in an Inactive status (not licensed to practice as a CPA)'}
+    Dimension:
+    Issue_year is year(`Original Issue Date`)
+    Issue_Decade is floor(Issue_year/10) * 10
+
+}
+>>>malloy
+run: CPA -> {
+    aggregate: Num_Active_CPA,Num_Inactive_CPA,Num_Retired_CPA,Total_CPA
+    
+}
+>>>malloy
+# line_chart
+run: CPA -> {
+    group_by: Issue_Decade
+    aggregate: Num_Retired_CPA
+    order_by: Issue_Decade
+    having: Issue_Decade < 2020}
+>>>malloy
+
+run: CPA -> {
+    group_by: Issue_Decade
+    aggregate: ActiveRatio
+    }
+>>>malloy
+run: CPA -> {
+  group_by: Issue_Decade
+  aggregate: New_CPAs is count() {where: Status = 'Licensed to practice public accounting'}
+}
+>>>malloy
+# line_chart
+run: CPA -> {
+  group_by: Issue_year
+  aggregate: New_CPAs is count() {where: Status = 'Licensed to practice public accounting'}
+  order_by: Issue_year desc
+  having: Issue_year < 2025
+    }
+>>>malloy
+# line_chart
+run: CPA -> {
+  group_by: Issue_year
+  aggregate: Retired_CPAs is count() {where: Status = 'Retired Licensee'}
+  order_by: Issue_year desc
+  having: Issue_year < 2025
+    }
+>>>malloy
+# line_chart
+run: CPA -> {
+  group_by: Issue_year
+  aggregate: ActiveRatio
+  order_by: Issue_year desc
+  having: Issue_year < 2025
+    }
+>>>malloy
+# shape_map
+run: CPA -> {
+  group_by: State
+  aggregate: Num_Active_CPA
+    }
+>>>malloy
+run: CPA -> {
+  group_by: City
+  having: State = 'WA' and Issue_year > 2020
+  aggregate: Num_Active_CPA
+    }
